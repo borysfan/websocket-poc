@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 
@@ -24,6 +25,12 @@ public class PersonController {
     public void persons(@RequestBody PersonalData personalData) {
         LOGGER.info("POST /persons has been called");
         personService.store(personalData);
+    }
+
+    @GetMapping("/api/persons")
+    public List<Person> personList() {
+        LOGGER.info("GET /persons");
+        return personService.persons();
     }
 
     @GetMapping("/api/persons/{identifier}")

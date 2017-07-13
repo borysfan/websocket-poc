@@ -25,6 +25,10 @@ public class PersonWebSocketClient extends WebSocketStompClient {
     }
 
     public void connectToPerson(int port, StompSessionHandler handler) {
-        this.connect("ws://{host}:{port}/stomp-endpoint", new WebSocketHttpHeaders(), handler, "localhost", port);
+        connectToPerson(port, new WebSocketHttpHeaders(), handler);
+    }
+
+    public void connectToPerson(int port, WebSocketHttpHeaders webSocketHttpHeaders, StompSessionHandler handler) {
+        this.connect("ws://{host}:{port}/stomp-endpoint", webSocketHttpHeaders, handler, "localhost", port);
     }
 }

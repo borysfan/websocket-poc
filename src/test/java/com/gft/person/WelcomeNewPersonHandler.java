@@ -15,7 +15,7 @@ public class WelcomeNewPersonHandler implements StompFrameHandler {
     public void handleFrame(StompHeaders headers, Object payload) {
         WelcomeNewPerson welcomeNewPerson = (WelcomeNewPerson) payload;
         System.out.println("####################################################");
-        System.out.println(((WelcomeNewPerson) payload).getMessage());
+        System.out.println(welcomeNewPerson.getMessage());
         System.out.println("####################################################");
     }
 }

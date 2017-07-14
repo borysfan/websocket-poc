@@ -3,6 +3,7 @@ package com.gft.person;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.embedded.LocalServerPort;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,16 +12,17 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
-import org.springframework.messaging.simp.stomp.StompHeaders;
-import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 
-import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import static com.sun.javaws.JnlpxArgs.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -50,7 +52,7 @@ public class PersonStompCommunicationIntegrationTest {
         final String lastName = "Doe";
         PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient();
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        personWebSocketClient.connectToPerson(port, new WebSocketHttpHeaders(credentials.httpHeaders()), new Subscription("/topic/person", new SynchronizationHandler<>(
+        personWebSocketClient.connect(port, credentials, new Subscription("/topic/person", new SynchronizationHandler<>(
                 new ConfirmationHandler(confirmation -> {
                     Assert.assertNotNull(confirmation);
                     Person person = loadPerson("http://localhost:" + port + confirmation.getRestEndpoint());
@@ -70,14 +72,50 @@ public class PersonStompCommunicationIntegrationTest {
         PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient();
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         //when
-        personWebSocketClient.connectToPerson(port, new WebSocketHttpHeaders(credentials.httpHeaders()),
-            new Connection(
-                    new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
-                    stompSession -> stompSession.send("/app/ws-persons", true)
+        personWebSocketClient.connect(port, credentials, new Connection(
+                new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                    stompSession -> stompSession.send("/app/ws-persons", null)
             ));
 
         //then
         Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void publishSubscribeModel() throws InterruptedException {
+        //given
+        final CountDownLatch countDownLatch = new CountDownLatch(2);
+        //when
+        new PersonWebSocketClient().connect(port, credentials, new Connection(
+                new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                stompSession -> {}
+        ));
+        new PersonWebSocketClient().connect(port, credentials, new Connection(
+                new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                stompSession -> stompSession.send("/app/ws-persons", null)
+        ));
+
+        //then
+        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void pointToPointModel() throws InterruptedException {
+        //given
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        StompFrameHandler mockedHandler = Mockito.mock(StompFrameHandler.class);
+        //when
+
+        new PersonWebSocketClient().connect(port, credentials, new Subscription("/user/queue/ws-auth", mockedHandler));
+
+        new PersonWebSocketClient().connect(port, credentials, new Connection(
+                new Subscription("/user/queue/ws-auth", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                stompSession -> stompSession.send("/app/ws-auth", null)
+        ));
+
+        //then
+        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
+        verifyZeroInteractions(mockedHandler);
     }
 
     private void savePersonalData(final PersonalData personalData) {

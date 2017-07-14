@@ -24,11 +24,15 @@ public class PersonWebSocketClient extends WebSocketStompClient {
         this.setMessageConverter(messageConverter);
     }
 
-    public void connectToPerson(int port, StompSessionHandler handler) {
-        connectToPerson(port, new WebSocketHttpHeaders(), handler);
+    public void connect(int port, StompSessionHandler handler) {
+        connect(port, new WebSocketHttpHeaders(), handler);
     }
 
-    public void connectToPerson(int port, WebSocketHttpHeaders webSocketHttpHeaders, StompSessionHandler handler) {
+    public void connect(int port, Credentials credentials, StompSessionHandler handler) {
+        connect(port, new WebSocketHttpHeaders(credentials.httpHeaders()), handler);
+    }
+
+    public void connect(int port, WebSocketHttpHeaders webSocketHttpHeaders, StompSessionHandler handler) {
         this.connect("ws://{host}:{port}/stomp-endpoint", webSocketHttpHeaders, handler, "localhost", port);
     }
 }

@@ -22,4 +22,11 @@ public class PersonalData {
         return lastName;
     }
 
+    @Override
+    public String toString() {
+        return "PersonalData{" +
+                "firsName='" + firsName + '\'' +
+                ", lastName='" + lastName + '\'' +
+                '}';
+    }
 }

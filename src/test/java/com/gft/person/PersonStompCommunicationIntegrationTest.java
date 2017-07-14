@@ -10,10 +10,14 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +60,22 @@ public class PersonStompCommunicationIntegrationTest {
 
         //when
         savePersonalData(new PersonalData(firstName, lastName));
+        //then
+        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void shouldGetResponseAfterCallWebSocketEndpoint() throws InterruptedException {
+        //given
+        PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient();
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        //when
+        personWebSocketClient.connectToPerson(port, new WebSocketHttpHeaders(credentials.httpHeaders()),
+            new Connection(
+                    new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                    stompSession -> stompSession.send("/app/ws-persons", true)
+            ));
+
         //then
         Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
     }

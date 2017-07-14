@@ -21,6 +21,7 @@ public class Person {
         this.personalData = personalData;
     }
 
+    @JsonProperty
     public UUID identifier() {
         return uuid;
     }
@@ -41,5 +42,13 @@ public class Person {
     @Override
     public int hashCode() {
         return Objects.hash(uuid, personalData);
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "uuid=" + uuid +
+                ", personalData=" + personalData +
+                '}';
     }
 }

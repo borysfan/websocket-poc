@@ -12,6 +12,9 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.WebSocketHttpHeaders;
@@ -116,6 +119,16 @@ public class PersonStompCommunicationIntegrationTest {
         //then
         Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
         verifyZeroInteractions(mockedHandler);
+    }
+
+    @Test
+    public void notifyTest() throws InterruptedException {
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        new PersonWebSocketClient().connect(port, credentials, new Connection(
+                new Subscription("/user/queue/ws-welcome", new SynchronizationHandler<>(new WelcomeNewPersonHandler(), countDownLatch)),
+                stompSession -> stompSession.send("/app/ws-notify", new PersonalData("Luke", "Skywalker"))
+        ));
+        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
     }
 
     private void savePersonalData(final PersonalData personalData) {

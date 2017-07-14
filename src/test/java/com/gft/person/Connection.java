@@ -34,4 +34,5 @@ public class Connection extends StompSessionHandlerAdapter {
     public void handleTransportError(StompSession session, Throwable exception) {
         LOGGER.error("Web-socket transport error", exception);
     }
+
 }

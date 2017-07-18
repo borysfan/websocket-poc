@@ -42,10 +42,25 @@ public class PersonStompCommunicationIntegrationTest {
     @Test
     public void shouldCallSecuredEndpoint() {
         //when
-        ResponseEntity<List<Person>> exchange = restTemplate.exchange("http://localhost:" + port + "/api/persons", HttpMethod.GET, new HttpEntity<>(credentials.httpHeaders()), new ParameterizedTypeReference<List<Person>>() {
+        ResponseEntity<List<Person>> exchange = restTemplate.exchange("https://localhost:" + port + "/api/persons", HttpMethod.GET, new HttpEntity<>(credentials.httpHeaders()), new ParameterizedTypeReference<List<Person>>() {
         });
         //then
         Assert.assertTrue(exchange.getStatusCode().is2xxSuccessful());
+    }
+
+    @Test
+    public void shouldGetResponseAfterCallWebSocketEndpoint() throws InterruptedException {
+        //given
+        PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient(restTemplate);
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        //when
+        personWebSocketClient.connect(port, credentials, new Connection(
+                new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
+                stompSession -> stompSession.send("/app/ws-persons", null)
+        ));
+
+        //then
+        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -53,12 +68,12 @@ public class PersonStompCommunicationIntegrationTest {
         //given
         final String firstName = "John";
         final String lastName = "Doe";
-        PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient();
+        PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient(restTemplate);
         final CountDownLatch countDownLatch = new CountDownLatch(1);
         personWebSocketClient.connect(port, credentials, new Subscription("/topic/person", new SynchronizationHandler<>(
                 new ConfirmationHandler(confirmation -> {
                     Assert.assertNotNull(confirmation);
-                    Person person = loadPerson("http://localhost:" + port + confirmation.getRestEndpoint());
+                    Person person = loadPerson("https://localhost:" + port + confirmation.getRestEndpoint());
                     Assert.assertEquals(firstName, person.getPersonalData().getFirsName());
                     Assert.assertEquals(lastName, person.getPersonalData().getLastName());
                 }), countDownLatch)));
@@ -70,30 +85,15 @@ public class PersonStompCommunicationIntegrationTest {
     }
 
     @Test
-    public void shouldGetResponseAfterCallWebSocketEndpoint() throws InterruptedException {
-        //given
-        PersonWebSocketClient personWebSocketClient = new PersonWebSocketClient();
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        //when
-        personWebSocketClient.connect(port, credentials, new Connection(
-                new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
-                    stompSession -> stompSession.send("/app/ws-persons", null)
-            ));
-
-        //then
-        Assert.assertTrue(countDownLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
     public void publishSubscribeModel() throws InterruptedException {
         //given
         final CountDownLatch countDownLatch = new CountDownLatch(2);
         //when
-        new PersonWebSocketClient().connect(port, credentials, new Connection(
+        new PersonWebSocketClient(restTemplate).connect(port, credentials, new Connection(
                 new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
                 stompSession -> {}
         ));
-        new PersonWebSocketClient().connect(port, credentials, new Connection(
+        new PersonWebSocketClient(restTemplate).connect(port, credentials, new Connection(
                 new Subscription("/topic/ws-persons", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
                 stompSession -> stompSession.send("/app/ws-persons", null)
         ));
@@ -109,9 +109,9 @@ public class PersonStompCommunicationIntegrationTest {
         StompFrameHandler mockedHandler = Mockito.mock(StompFrameHandler.class);
         //when
 
-        new PersonWebSocketClient().connect(port, credentials, new Subscription("/user/queue/ws-auth", mockedHandler));
+        new PersonWebSocketClient(restTemplate).connect(port, credentials, new Subscription("/user/queue/ws-auth", mockedHandler));
 
-        new PersonWebSocketClient().connect(port, credentials, new Connection(
+        new PersonWebSocketClient(restTemplate).connect(port, credentials, new Connection(
                 new Subscription("/user/queue/ws-auth", new SynchronizationHandler<>(new PersonHandler(), countDownLatch)),
                 stompSession -> stompSession.send("/app/ws-auth", null)
         ));
@@ -124,7 +124,7 @@ public class PersonStompCommunicationIntegrationTest {
     @Test
     public void notifyTest() throws InterruptedException {
         final CountDownLatch countDownLatch = new CountDownLatch(1);
-        new PersonWebSocketClient().connect(port, credentials, new Connection(
+        new PersonWebSocketClient(restTemplate).connect(port, credentials, new Connection(
                 new Subscription("/user/queue/ws-welcome", new SynchronizationHandler<>(new WelcomeNewPersonHandler(), countDownLatch)),
                 stompSession -> stompSession.send("/app/ws-notify", new PersonalData("Luke", "Skywalker"))
         ));
@@ -132,7 +132,7 @@ public class PersonStompCommunicationIntegrationTest {
     }
 
     private void savePersonalData(final PersonalData personalData) {
-        ResponseEntity<Void> exchange = restTemplate.exchange("http://localhost:" + port + "/api/persons", HttpMethod.POST, new HttpEntity<>(personalData, credentials.httpHeaders()), Void.class);
+        ResponseEntity<Void> exchange = restTemplate.exchange("https://localhost:" + port + "/api/persons", HttpMethod.POST, new HttpEntity<>(personalData, credentials.httpHeaders()), Void.class);
         Assert.assertTrue(exchange.getStatusCode().is2xxSuccessful());
     }
 

@@ -29,6 +29,11 @@ repositories {
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-websocket")
     compile("org.springframework.boot:spring-boot-starter-security")
+    compile('org.apache.httpcomponents:httpclient:4.4.1')
+
+    compile('io.projectreactor:reactor-net:2.0.8.RELEASE')
+    compile('io.netty:netty-all:4.0.31.Final')
+    
     compile("org.webjars:webjars-locator")
     compile("org.webjars:sockjs-client:1.0.2")
     compile("org.webjars:stomp-websocket:2.3.3")

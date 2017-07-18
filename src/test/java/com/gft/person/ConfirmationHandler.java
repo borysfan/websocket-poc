@@ -17,6 +17,7 @@ public class ConfirmationHandler implements StompFrameHandler {
         this.consumer = consumer;
     }
 
+
     @Override
     public void handleFrame(StompHeaders headers, Object payload) {
         LOGGER.info("Handling confirmation");
@@ -28,4 +29,6 @@ public class ConfirmationHandler implements StompFrameHandler {
     public Type getPayloadType(StompHeaders headers) {
         return Confirmation.class;
     }
+
+
 }

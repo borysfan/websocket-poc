@@ -20,7 +20,7 @@ public class Subscription extends StompSessionHandlerAdapter {
 
     @Override
     public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
-        LOGGER.info("Connected. Trying to subscribe...");
+        LOGGER.info("Connected. Subscribing to {}", destination);
         session.subscribe(this.destination, handler);
     }
 }
